@@ -5,6 +5,8 @@ on:
     branches: [ test_master ]
   pull_request:
     branches: [ test_master ]
+  release:
+    types: [ published ]
 
 jobs:
   build:
@@ -35,11 +37,24 @@ jobs:
     # Build toolchain
     - name: Build ${{ matrix.target }} toolchain for ${{ matrix.host.name }}
       run: |
-        echo "DUMMY FILE" > ${HOME}/${{ matrix.target }}.tar.gz
+        echo "DUMMY FILE" > ${GITHUB_WORKSPACE}/${{ matrix.target }}.tar.gz
 
-    # Upload toolchain
-    - name: Upload toolchain
+    # Upload build artifact (on push and pull_request)
+    - name: Upload build artifact
+      if: github.event_name != 'release'
       uses: actions/upload-artifact@v2
       with:
         name: toolchain_${{ matrix.host.name }}_${{ matrix.target }}
-        path: ~/${{ matrix.target }}.tar.gz
+        path: ${{ github.workspace }}/${{ matrix.target }}.tar.gz
+
+    # Upload release asset (on release)
+    - name: Upload release asset
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ${{ github.workspace }}/${{ matrix.target }}.tar.gz
+        asset_name: ${{ github.event.release.tag_name }}_${{ matrix.host.name }}_${{ matrix.target }}.tar.gz
+        asset_content_type: application/gzip
