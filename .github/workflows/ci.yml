@@ -42,8 +42,8 @@ jobs:
     - name: Install dependency packages for macOS
       if: ${{ runner.os == 'macOS' }}
       run: |
-        brew install autoconf automake bash binutils gawk gnu-sed help2man \
-                     ncurses
+        brew install autoconf automake bash binutils gawk gnu-sed gnu-tar \
+                     help2man ncurses
 
     - name: Create case sensitive workspace volume for macOS
       if: ${{ runner.os == 'macOS' }}
@@ -80,6 +80,13 @@ jobs:
     - name: Build ${{ matrix.target }} toolchain for ${{ matrix.host.name }}
       run: |
         export CT_NG="${HOME}/crosstool-ng/bin/ct-ng"
+
+        # Resolve GNU tar name
+        if [ "$RUNNER_OS" == "macOS" ]; then
+          export TAR="gtar"
+        else
+          export TAR="tar"
+        fi
 
         # Resolve workspace path
         if [ "$RUNNER_OS" == "macOS" ]; then
@@ -132,9 +139,17 @@ jobs:
 
         # Resolve output directory path
         if [ "${{ matrix.host.name }}" == "windows-x86_64" ]; then
-          export OUTPUT_DIR="${WORKSPACE}/output/HOST-x86_64-w64-mingw32"
+          export OUTPUT_BASE="${WORKSPACE}/output"
+          export OUTPUT_DIR="HOST-x86_64-w64-mingw32"
         else
-          export OUTPUT_DIR="${WORKSPACE}/output"
+          export OUTPUT_BASE="${WORKSPACE}"
+          export OUTPUT_DIR="output"
+        fi
+
+        # Rename output directory if release build
+        if [ "${{ github.event_name }}" == "release" ]; then
+          mv ${OUTPUT_BASE}/${OUTPUT_DIR} ${OUTPUT_BASE}/${{ github.event.release.tag_name }}
+          export OUTPUT_DIR="${{ github.event.release.tag_name }}"
         fi
 
         # Move build log file out of workspace
@@ -142,7 +157,8 @@ jobs:
            ${{ matrix.target }}.log.bz2
 
         # Create archive
-        tar -zcvf ${{ matrix.target }}.tar.gz -C ${OUTPUT_DIR} .
+        ${TAR} -zcvf --owner=0 --group=0 ${{ matrix.target }}.tar.gz
+               -C ${OUTPUT_BASE} ${OUTPUT_DIR}
 
     # Upload build log
     - name: Upload build log
