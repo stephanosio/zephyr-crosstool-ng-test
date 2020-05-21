@@ -90,8 +90,9 @@ jobs:
           export WORKSPACE="${HOME}"
         fi
 
-        # Set output path
+        # Create output directory
         export CT_PREFIX="${WORKSPACE}/output"
+        mkdir -p ${CT_PREFIX}
 
         # Create build directory
         mkdir -p ${WORKSPACE}/build
@@ -139,8 +140,8 @@ jobs:
         fi
 
         # Move build log file out of workspace
-        sudo mv ${OUTPUT_DIR}/${{ matrix.target }}/build.log.bz2 \
-                ${{ matrix.target }}.log.bz2
+        mv ${OUTPUT_DIR}/${{ matrix.target }}/build.log.bz2 \
+           ${{ matrix.target }}.log.bz2
 
         # Create archive
         tar -zcvf ${{ matrix.target }}.tar.gz -C ${OUTPUT_DIR} .
