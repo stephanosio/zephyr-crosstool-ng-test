@@ -145,6 +145,9 @@ jobs:
           export OUTPUT_DIR="output"
         fi
 
+        # Grant write permission for owner
+        chmod -R u+w ${OUTPUT_BASE}/${OUTPUT_DIR}
+
         # Rename output directory if release build
         if [ "${{ github.event_name }}" == "release" ]; then
           mv ${OUTPUT_BASE}/${OUTPUT_DIR} ${OUTPUT_BASE}/${{ github.event.release.tag_name }}
@@ -152,11 +155,11 @@ jobs:
         fi
 
         # Move build log file out of workspace
-        sudo mv ${OUTPUT_BASE}/${OUTPUT_DIR}/${{ matrix.target }}/build.log.bz2 \
-                ${{ matrix.target }}.log.bz2
+        mv ${OUTPUT_BASE}/${OUTPUT_DIR}/${{ matrix.target }}/build.log.bz2 \
+           ${{ matrix.target }}.log.bz2
 
         # Create archive
-        ${TAR} -zcvf --owner=0 --group=0 ${{ matrix.target }}.tar.gz
+        ${TAR} -zcvf ${{ matrix.target }}.tar.gz --owner=0 --group=0
                -C ${OUTPUT_BASE} ${OUTPUT_DIR}
 
     # Upload build log
